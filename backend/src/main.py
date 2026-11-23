@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from scripts.seed_demo import seed
 from src.config.database import Base, engine
+from src.config import schema
 from src.config.settings import SEED_DEMO
 from src.domain.spec import SPEC
 from src.middlewares import errors, headers, rate
@@ -16,6 +17,8 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_app):
     Base.metadata.create_all(engine)
+    schema.upgrade(engine)
+    schema.normalize_legacy(engine)
     if SEED_DEMO:
         try:
             log.info('Seeded %s', seed())

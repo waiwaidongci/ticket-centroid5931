@@ -12,8 +12,9 @@ export async function deliveryPage(route, refresh) {
   const {spec, runs} = workspace;
   const message = feedback();
   const artifacts = table([
-    {label:'报告', render:row=>link(row.name,`#results/${row.id}`)},
-    {label:'复核', render:row=>pill(REVIEW[row.review],row.review)},
+    {label:'报告', render:row=>link(row.name,row.kind==='staffing'?`#staffing/${row.basis_run_id}/${row.id}`:`#results/${row.id}`)},
+    {label:'类型', render:row=>row.kind==='staffing'?'排班推算':'分流验收'},
+    {label:'复核', render:row=>row.kind==='staffing'?'—':pill(REVIEW[row.review],row.review)},
     {label:'计算时间', render:row=>date(row.finished_at)},
     {label:'下载', render:row=>{
       const download = button('下载 CSV',{class:'quiet'});

@@ -72,8 +72,8 @@ def parse_rows(text):
     return rows
 
 
-def normalize_params(params):
-    fields = SPEC['params']
+def normalize_params(params, fields=None):
+    fields = SPEC['params'] if fields is None else fields
     if set(params) - {field['key'] for field in fields}:
         raise ValueError('存在未知运行参数，请重新打开工作面板')
     return {field['key']: cell(field, params.get(field['key'], field['default'])) for field in fields}

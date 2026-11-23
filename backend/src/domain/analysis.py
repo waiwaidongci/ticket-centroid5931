@@ -145,6 +145,29 @@ def _table(title, columns, rows):
     return {"title": title, "columns": [{"key": key, "label": label} for key, label in columns], "rows": rows}
 
 
+def basis_matrix(labels, predictions):
+    """把留出件的归口到去向流向汇总成可复用的比例依据。
+
+    归口取留出集中实际出现的人工归口，去向取全部业务队列与人工分诊。
+    每行合计为该归口的留出件数，供排班推算按比例还原接件量。
+    """
+    origins = sorted({row["actual"] for row in predictions})
+    destinations = sorted(set(labels) | {MANUAL_QUEUE})
+    totals = Counter(row["actual"] for row in predictions)
+    counts = {
+        origin: {destination: 0 for destination in destinations}
+        for origin in origins
+    }
+    for row in predictions:
+        counts[row["actual"]][row["predicted"]] += 1
+    return {
+        "origins": origins,
+        "destinations": destinations,
+        "totals": {origin: totals[origin] for origin in origins},
+        "counts": counts,
+    }
+
+
 def _queue_summary(labels, counts, centroids, predictions, majority):
     support = Counter(row["actual"] for row in predictions)
     routed = Counter(row["predicted"] for row in predictions)
@@ -228,4 +251,5 @@ def analyze(rows, normalized_params):
                 "结合逐件依据复核错投和分诊原因，沿用固定留出批比较阈值前后的覆盖率与宏 F1。"
             ),
         }],
+        "basis": basis_matrix(labels, predictions),
     }

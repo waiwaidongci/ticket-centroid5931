@@ -16,8 +16,11 @@ def main():
             lease = claim()
             heartbeat.touch()
             if lease:
-                execute(lease)
+                # 排班推算按检查点分批；还有单元待算时立即续领，不必等待唤醒。
+                more = execute(lease)
                 heartbeat.touch()
+                if more:
+                    time.sleep(0.05)
             else:
                 wait()
         except Exception:

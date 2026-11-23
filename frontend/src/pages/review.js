@@ -23,7 +23,7 @@ function reviewForm(item, spec, refresh) {
 
 export async function reviewPage(route, refresh) {
   const {spec, runs} = workspace;
-  const completed = runs.filter(run => run.status === 'complete');
+  const completed = runs.filter(run => run.status === 'complete' && run.kind !== 'staffing');
   const id = route.id || completed[0]?.id;
   if (!id) return panel(spec.pages[4], empty('先完成一次运行，再复核结果。','#run',spec.pages[2]));
   const job = await workspace.getRun(id);

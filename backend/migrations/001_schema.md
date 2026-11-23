@@ -8,3 +8,13 @@
 - `schedules` 保存定时计划和下一到期时间。
 - `deliveries` 保存站内分发回执，每次运行最多一个回执。
 - `audit_events` 记录登录、数据入库、运行、复核和报表分发动作。
+
+# 002 排班推算
+
+应用启动时由 `src/config/schema.py` 做幂等的列补齐，兼容已部署的数据库：
+
+- `runs.kind`：`acceptance` 为分流验收，`staffing` 为排班推算；旧行回填为验收。
+- `runs.basis_run_id`：排班推算所沿用的验收运行。
+- `runs.request_key`：依据、件数与容差的 SHA-256 指纹，建唯一索引以保证重复提交只发布一次。
+- `runs.resumes`：中断续算次数，与 `attempt` 分开计数，续算不消耗重试上限。
+- `staffing_steps`：按 `(run_id, unit)` 唯一保存的边界检查点，中断后据此续算。

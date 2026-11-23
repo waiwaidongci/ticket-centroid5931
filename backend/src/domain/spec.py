@@ -46,7 +46,7 @@ SPEC = {
     "decision": "验收决定",
     "action": "提交验收决定",
     "modes": ["放行试运行", "调整阈值后复测", "补齐标注后复测"],
-    "pages": ["值班总览", "来信明细", "分流验收", "分流结果", "验收复核", "分流交付"],
+    "pages": ["值班总览", "来信明细", "分流验收", "分流结果", "验收复核", "分流交付", "排班推算"],
     "fields": [
         {"key": "ticket_id", "label": "来信编号", "type": "string", "required": True, "max_length": 80},
         {"key": "text", "label": "去标识来信", "type": "string", "required": True, "max_length": 1200},
@@ -61,4 +61,18 @@ SPEC = {
     ],
     "fixture": {"min_similarity": 0.30},
     "axes": "分流量图横轴为目标队列，纵轴为留出来信条数，包含人工分诊。",
+    "kinds": {
+        "acceptance": {"label": "分流验收", "run": "分流验收"},
+        "staffing": {"label": "排班推算", "run": "接件量推算"},
+    },
+    "staffing": {
+        "basis_desc": "选定一份已完成的分流验收，沿用其留出件各归口到去向的比例。",
+        "counts_help": "录入新批次各去向件数；各队件数将取整数且合计等于来信总数。",
+        "budget": 2,
+        "tolerance": {
+            "key": "tolerance", "label": "统一容差", "type": "number", "required": True,
+            "min": 0, "max": 100000, "default": 1,
+            "help": "每个去向的推算件数与录入件数之差上限，对全部去向一致。",
+        },
+    },
 }

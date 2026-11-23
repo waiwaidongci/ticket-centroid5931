@@ -19,6 +19,12 @@ class RunRequest(Request):
     name: str = Field(min_length=1, max_length=120)
     params: dict = Field(default_factory=dict)
 
+class StaffingRequest(Request):
+    basis_run_id: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=120)
+    counts: dict[str, int] = Field(default_factory=dict)
+    params: dict = Field(default_factory=dict)
+
 class ReviewRequest(Request):
     review: Review
     note: str = Field(min_length=1, max_length=500)

@@ -10,7 +10,8 @@ from src.domain.spec import SPEC
 from src.models.identity import User
 from src.models.jobs import Run
 from src.models.source import Dataset
-from src.schemas.requests import ReviewRequest, RunRequest
+from src.schemas.requests import ReviewRequest, RunRequest, StaffingRequest
+from src.services import staffing as staffing_service
 from src.services.audit import record
 from src.services.validation import normalize_params
 from src.utils import views
@@ -36,13 +37,41 @@ def create(body: RunRequest, db: Session = Depends(connection),
            actor: User = Depends(allow(Role.ADMIN, Role.ANALYST))):
     if not db.get(Dataset, body.dataset_id):
         raise HTTPException(404, '找不到指定的数据批次')
-    item = Run(name=body.name, dataset_id=body.dataset_id, params=normalize_params(body.params), author=actor.username)
+    item = Run(kind='acceptance', dataset_id=body.dataset_id, name=body.name,
+               params=normalize_params(body.params), author=actor.username)
     db.add(item)
     db.flush()
     record(db, actor.username, 'analysis.queued', item.id, dataset_id=item.dataset_id)
     db.commit()
     wake()
     return views.run(item, detail=True)
+
+
+@router.get('/staffing/basis')
+def staffing_basis(db: Session = Depends(connection), actor: User = Depends(current)):
+    """可沿用的验收依据：已完成且带有分流比例的验收运行。"""
+    items = db.scalars(select(Run).where(Run.kind == 'acceptance', Run.status == Status.COMPLETE)
+                       .order_by(Run.id.desc()).limit(100))
+    usable = []
+    for item in items:
+        basis = (item.result or {}).get('basis')
+        if basis:
+            usable.append({**views.run(item), 'origins': basis['origins'],
+                           'destinations': basis['destinations'], 'totals': basis['totals'],
+                           'counts': basis['counts']})
+    return usable
+
+
+@router.post('/staffing', status_code=202)
+def create_staffing(body: StaffingRequest, db: Session = Depends(connection),
+                    actor: User = Depends(allow(Role.ADMIN, Role.ANALYST))):
+    basis = staffing_service.basis_of(db.get(Run, body.basis_run_id))
+    params = staffing_service.frozen_params(body, basis)
+    item, reused = staffing_service.create(db, body, actor, basis, params)
+    db.commit()
+    if not reused:
+        wake()
+    return {**views.run(item, detail=True), 'reused': reused}
 
 
 @router.get('/{run_id}')

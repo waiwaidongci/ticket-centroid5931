@@ -7,12 +7,15 @@ import {handler, poll} from '../hooks/action.js';
 import {workspace} from '../stores/workspace.js';
 import {button, el, h, link, p} from '../utils/dom.js';
 import {date, value} from '../utils/format.js';
+import {staffingPage} from './staffing.js';
 
 export async function results(route, refresh) {
   const {spec,runs,datasets} = workspace;
   const id = route.id || runs[0]?.id;
   if (!id) return panel(spec.pages[3],empty('还没有可查看的运行结果。','#run','前往运行'));
   const job = await workspace.getRun(id);
+  // 排班推算有独立输入口径，转由排班页展示。
+  if (job.kind === 'staffing') return staffingPage({page:'staffing', id:job.basis_run_id, offset:job.id}, refresh);
   const source = datasets.find(item => item.id === job.dataset_id);
   const message = feedback();
   const finished = item => item.status === 'complete' || item.status === 'failed';

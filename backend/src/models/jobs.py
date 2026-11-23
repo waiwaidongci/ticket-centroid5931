@@ -23,7 +23,10 @@ class Run(Base):
     __table_args__ = (UniqueConstraint('schedule_id', 'scheduled_at'),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_id: Mapped[int] = mapped_column(ForeignKey('datasets.id'))
+    kind: Mapped[str] = mapped_column(String(20), default='acceptance', index=True)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey('datasets.id'))
+    basis_run_id: Mapped[int | None] = mapped_column(ForeignKey('runs.id'))
+    request_key: Mapped[str | None] = mapped_column(String(64), unique=True)
     schedule_id: Mapped[int | None] = mapped_column(ForeignKey('schedules.id'))
     scheduled_at: Mapped[datetime | None]
     name: Mapped[str] = mapped_column(String(120))
@@ -36,6 +39,7 @@ class Run(Base):
     review_note: Mapped[str | None] = mapped_column(String(500))
     decision: Mapped[str | None] = mapped_column(String(120))
     attempt: Mapped[int] = mapped_column(default=0)
+    resumes: Mapped[int] = mapped_column(default=0, server_default='0')
     lease_until: Mapped[datetime | None]
     author: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(default=now)
@@ -49,4 +53,17 @@ class Delivery(Base):
     recipient: Mapped[str] = mapped_column(String(100))
     state: Mapped[str] = mapped_column(String(20))
     detail: Mapped[str] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(default=now)
+
+
+class StaffingStep(Base):
+    """排班推算的运行检查点，按运行与工作单元去重，支持中断续算。"""
+
+    __tablename__ = 'staffing_steps'
+    __table_args__ = (UniqueConstraint('run_id', 'unit'),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey('runs.id'), index=True)
+    unit: Mapped[str] = mapped_column(String(40))
+    payload: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(default=now)
